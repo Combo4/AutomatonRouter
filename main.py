@@ -1,7 +1,6 @@
 import streamlit as st
 import json
 
-# 47 relative offsets
 offsets = [
     [0, 0, 0], [14, 14, 13], [35, 10, -6], [43, 8, -19], [57, 8, -10], [52, 8, 6],
     [51, 8, 28], [36, 8, 54], [16, 14, 48], [18, 13, -17], [31, 25, -19], [33, 15, -31],
@@ -33,32 +32,33 @@ if st.button("Generate Route"):
                 "r": 0,
                 "g": 1,
                 "b": 0,
-                "options": {
-                    "name": str(i)
-                }
+                "options": {"name": str(i)}
             })
 
         route_json = json.dumps(route, separators=(',', ':'))
 
         st.success("Route generated!")
 
-        # Text area for output
         st.text_area("Generated JSON", value=route_json, height=300, key="route_json")
 
-        # JavaScript-based copy button
-        copy_code = f"""
+        copy_button = f"""
+        <textarea id="toCopy" style="opacity:0; height:0;">{route_json}</textarea>
+        <button onclick="copyText()">📋 Copy to Clipboard</button>
         <script>
-        function copyToClipboard(text) {{
-            navigator.clipboard.writeText(text).then(function() {{
-                alert('Copied to clipboard!');
-            }});
+        function copyText() {{
+            var copyText = document.getElementById("toCopy");
+            copyText.style.display = "block";
+            copyText.select();
+            document.execCommand("copy");
+            copyText.style.display = "none";
+            alert("Copied to clipboard!");
         }}
         </script>
-        <button onclick="copyToClipboard(`{route_json}`)">📋 Copy to Clipboard</button>
         """
-        st.markdown(copy_code, unsafe_allow_html=True)
+        st.markdown(copy_button, unsafe_allow_html=True)
 
         st.download_button("💾 Download JSON", route_json, file_name="skytils_route.txt")
 
     except Exception:
         st.error("Invalid format. Please enter coordinates like: `200 200 200`")
+d format. Please enter coordinates like: `200 200 200`")
