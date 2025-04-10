@@ -41,9 +41,37 @@ if st.button("Generate Route"):
 
         st.text_area("Generated JSON", value=route_json, height=300, key="route_json")
 
-        copy_button = f"""
-        <textarea id="toCopy" style="opacity:0; height:0;">{route_json}</textarea>
-        <button onclick="copyText()">📋 Copy to Clipboard</button>
+        # Button Row with matching style
+        st.markdown("""
+        <style>
+        .button-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .button-row button {
+            background-color: #0e1117;
+            border: 1px solid #444;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .button-row button:hover {
+            background-color: #1a1e27;
+        }
+        </style>
+
+        <div class="button-row">
+            <button onclick="copyText()">📋 Copy</button>
+            <a download="skytils_route.txt" href="data:text/plain;charset=utf-8,{data}" target="_blank">
+                <button>💾 Download</button>
+            </a>
+        </div>
+
+        <textarea id="toCopy" style="opacity:0; height:0;">{data}</textarea>
+
         <script>
         function copyText() {{
             var copyText = document.getElementById("toCopy");
@@ -54,10 +82,7 @@ if st.button("Generate Route"):
             alert("Copied to clipboard!");
         }}
         </script>
-        """
-        st.markdown(copy_button, unsafe_allow_html=True)
-
-        st.download_button("💾 Download JSON", route_json, file_name="skytils_route.txt")
+        """.replace("{data}", route_json), unsafe_allow_html=True)
 
     except Exception:
         st.error("Invalid format. Please enter coordinates like: `200 200 200`")
