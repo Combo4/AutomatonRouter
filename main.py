@@ -1,6 +1,5 @@
 import streamlit as st
 import json
-import pyperclip
 
 # 47 relative offsets
 offsets = [
@@ -15,45 +14,31 @@ offsets = [
     [-15, 17, -9], [11, 15, 10]
 ]
 
-st.set_page_config(page_title="Skytils Route Generator", layout="centered", page_icon="🧭")
+st.set_page_config(page_title="Skytils Route Generator", layout="centered")
 
-st.markdown(
-    "<h1 style='text-align: center; color: lime;'>Skytils Route Generator</h1>",
-    unsafe_allow_html=True
-)
+st.title("Skytils Route Generator")
 
-with st.form("coords_form"):
-    coord_input = st.text_input("Enter base coordinates (x y z)", placeholder="e.g., 700 50 500")
-    submitted = st.form_submit_button("Generate Route")
+x = st.number_input("Enter base X", value=0)
+y = st.number_input("Enter base Y", value=0)
+z = st.number_input("Enter base Z", value=0)
 
-if submitted:
-    try:
-        x_str, y_str, z_str = coord_input.strip().split()
-        base_x, base_y, base_z = int(x_str), int(y_str), int(z_str)
-
-        route = []
-        for i, (dx, dy, dz) in enumerate(offsets[1:], start=1):
-            point = {
-                "x": base_x + dx,
-                "y": base_y + dy,
-                "z": base_z + dz,
-                "r": 0,
-                "g": 1,
-                "b": 0,
-                "options": {
-                    "name": str(i)
-                }
+if st.button("Generate Route"):
+    route = []
+    for i, (dx, dy, dz) in enumerate(offsets[1:], start=1):
+        route.append({
+            "x": x + dx,
+            "y": y + dy,
+            "z": z + dz,
+            "r": 0,
+            "g": 1,
+            "b": 0,
+            "options": {
+                "name": str(i)
             }
-            route.append(point)
+        })
 
-        route_json = json.dumps(route, separators=(',', ':'))
+    route_json = json.dumps(route, separators=(',', ':'))
 
-        # Show the JSON and allow copying
-        st.code(route_json, language='json')
-
-        if st.button("📋 Copy to Clipboard"):
-            pyperclip.copy(route_json)
-            st.success("Copied to clipboard!")
-
-    except ValueError:
-        st.error("Please enter 3 integers separated by spaces (e.g., 700 50 500)")
+    st.success("Route generated!")
+    st.text_area("Generated JSON", value=route_json, height=300)
+    st.download_button("Download JSON", route_json, file_name="skytils_route.txt")
