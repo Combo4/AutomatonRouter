@@ -61,4 +61,3 @@ if st.button("Generate Route"):
 
     except Exception:
         st.error("Invalid format. Please enter coordinates like: `200 200 200`")
-d format. Please enter coordinates like: `200 200 200`")
