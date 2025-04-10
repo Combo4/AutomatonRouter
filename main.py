@@ -1,8 +1,6 @@
-import tkinter as tk
+import streamlit as st
 import json
-import os
-import webbrowser
-import pyperclip  # Make sure this is installed: pip install pyperclip
+import pyperclip
 
 # 47 relative offsets
 offsets = [
@@ -17,99 +15,45 @@ offsets = [
     [-15, 17, -9], [11, 15, 10]
 ]
 
-# Filename for route file
-filename = "skytils_route.txt"
+st.set_page_config(page_title="Skytils Route Generator", layout="centered", page_icon="🧭")
 
-def generate_route(base_x, base_y, base_z):
-    route = []
-    for i, (dx, dy, dz) in enumerate(offsets[1:], start=1):
-        point = {
-            "x": base_x + dx,
-            "y": base_y + dy,
-            "z": base_z + dz,
-            "r": 0,
-            "g": 1,
-            "b": 0,
-            "options": {
-                "name": str(i)
-            }
-        }
-        route.append(point)
-    return route
+st.markdown(
+    "<h1 style='text-align: center; color: lime;'>Skytils Route Generator</h1>",
+    unsafe_allow_html=True
+)
 
-def save_to_txt(route):
-    with open(filename, "w") as f:
-        json.dump(route, f, separators=(',', ':'))
+with st.form("coords_form"):
+    coord_input = st.text_input("Enter base coordinates (x y z)", placeholder="e.g., 700 50 500")
+    submitted = st.form_submit_button("Generate Route")
 
-def read_file_content():
-    if os.path.exists(filename):
-        with open(filename, "r") as f:
-            return f.read()
-    return ""
-
-def copy_and_close():
-    content = read_file_content()
-    pyperclip.copy(content)  # Use pyperclip instead of tkinter clipboard
-
-    copied_label = tk.Label(root, text="Copied!", fg="lime", bg="#1e1e1e", font=("Segoe UI", 10, "bold"))
-    copied_label.pack(pady=5)
-
-    root.after(1000, root.destroy)
-
-def open_file():
-    if os.path.exists(filename):
-        webbrowser.open(f"file://{os.path.abspath(filename)}")
-
-def submit_coords():
-    input_text = entry.get()
+if submitted:
     try:
-        x_str, y_str, z_str = input_text.strip().split()
-        x, y, z = int(x_str), int(y_str), int(z_str)
-        route = generate_route(x, y, z)
-        save_to_txt(route)
-        show_copy_window()
+        x_str, y_str, z_str = coord_input.strip().split()
+        base_x, base_y, base_z = int(x_str), int(y_str), int(z_str)
+
+        route = []
+        for i, (dx, dy, dz) in enumerate(offsets[1:], start=1):
+            point = {
+                "x": base_x + dx,
+                "y": base_y + dy,
+                "z": base_z + dz,
+                "r": 0,
+                "g": 1,
+                "b": 0,
+                "options": {
+                    "name": str(i)
+                }
+            }
+            route.append(point)
+
+        route_json = json.dumps(route, separators=(',', ':'))
+
+        # Show the JSON and allow copying
+        st.code(route_json, language='json')
+
+        if st.button("📋 Copy to Clipboard"):
+            pyperclip.copy(route_json)
+            st.success("Copied to clipboard!")
+
     except ValueError:
-        entry.delete(0, tk.END)
-        entry.insert(0, "Invalid format. Use: x y z")
-
-def show_copy_window():
-    for widget in root.winfo_children():
-        widget.destroy()
-
-    root.configure(bg="#1e1e1e")
-
-    btn_copy_close = tk.Button(root, text="Copy & Close", command=copy_and_close,
-                               bg="#333333", fg="#ffffff", activebackground="#444444", relief="flat")
-    btn_copy_close.pack(pady=10, ipadx=10, ipady=5)
-
-    btn_open = tk.Button(root, text="Open File", command=open_file,
-                         bg="#333333", fg="#ffffff", activebackground="#444444", relief="flat")
-    btn_open.pack(pady=5, ipadx=10, ipady=5)
-
-    btn_back = tk.Button(root, text="Back", command=show_entry_window,
-                         bg="#333333", fg="#ffffff", activebackground="#444444", relief="flat")
-    btn_back.pack(pady=5, ipadx=10, ipady=5)
-
-def show_entry_window():
-    for widget in root.winfo_children():
-        widget.destroy()
-
-    root.configure(bg="#1e1e1e")
-
-    label = tk.Label(root, text="Enter base coordinates (x y z):",
-                     bg="#1e1e1e", fg="#ffffff")
-    label.pack(pady=5)
-
-    global entry
-    entry = tk.Entry(root, width=30, bg="#2e2e2e", fg="#ffffff", insertbackground="white")
-    entry.pack(pady=5)
-
-    submit_button = tk.Button(root, text="Generate Route", command=submit_coords,
-                              bg="#333333", fg="#ffffff", activebackground="#444444", relief="flat")
-    submit_button.pack(pady=10, ipadx=10, ipady=5)
-
-# Initialize the main window
-root = tk.Tk()
-root.title("Skytils Route Generator")
-show_entry_window()
-root.mainloop()
+        st.error("Please enter 3 integers separated by spaces (e.g., 700 50 500)")
