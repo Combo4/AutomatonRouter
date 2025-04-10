@@ -17,7 +17,6 @@ offsets = [
 st.set_page_config(page_title="Skytils Route Generator", layout="centered")
 st.title("Skytils Route Generator")
 
-# Single-line input
 coord_input = st.text_input("Enter base coordinates (X Y Z)", placeholder="e.g. 200 200 200")
 
 if st.button("Generate Route"):
@@ -25,7 +24,6 @@ if st.button("Generate Route"):
         x_str, y_str, z_str = coord_input.strip().split()
         x, y, z = int(x_str), int(y_str), int(z_str)
 
-        # Generate route
         route = []
         for i, (dx, dy, dz) in enumerate(offsets[1:], start=1):
             route.append({
@@ -43,8 +41,24 @@ if st.button("Generate Route"):
         route_json = json.dumps(route, separators=(',', ':'))
 
         st.success("Route generated!")
-        st.text_area("Generated JSON", value=route_json, height=300)
-        st.download_button("Download JSON", route_json, file_name="skytils_route.txt")
+
+        # Text area for output
+        st.text_area("Generated JSON", value=route_json, height=300, key="route_json")
+
+        # JavaScript-based copy button
+        copy_code = f"""
+        <script>
+        function copyToClipboard(text) {{
+            navigator.clipboard.writeText(text).then(function() {{
+                alert('Copied to clipboard!');
+            }});
+        }}
+        </script>
+        <button onclick="copyToClipboard(`{route_json}`)">📋 Copy to Clipboard</button>
+        """
+        st.markdown(copy_code, unsafe_allow_html=True)
+
+        st.download_button("💾 Download JSON", route_json, file_name="skytils_route.txt")
 
     except Exception:
         st.error("Invalid format. Please enter coordinates like: `200 200 200`")
