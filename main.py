@@ -15,30 +15,36 @@ offsets = [
 ]
 
 st.set_page_config(page_title="Skytils Route Generator", layout="centered")
-
 st.title("Skytils Route Generator")
 
-x = st.number_input("Enter base X", value=0)
-y = st.number_input("Enter base Y", value=0)
-z = st.number_input("Enter base Z", value=0)
+# Single-line input
+coord_input = st.text_input("Enter base coordinates (X Y Z)", placeholder="e.g. 200 200 200")
 
 if st.button("Generate Route"):
-    route = []
-    for i, (dx, dy, dz) in enumerate(offsets[1:], start=1):
-        route.append({
-            "x": x + dx,
-            "y": y + dy,
-            "z": z + dz,
-            "r": 0,
-            "g": 1,
-            "b": 0,
-            "options": {
-                "name": str(i)
-            }
-        })
+    try:
+        x_str, y_str, z_str = coord_input.strip().split()
+        x, y, z = int(x_str), int(y_str), int(z_str)
 
-    route_json = json.dumps(route, separators=(',', ':'))
+        # Generate route
+        route = []
+        for i, (dx, dy, dz) in enumerate(offsets[1:], start=1):
+            route.append({
+                "x": x + dx,
+                "y": y + dy,
+                "z": z + dz,
+                "r": 0,
+                "g": 1,
+                "b": 0,
+                "options": {
+                    "name": str(i)
+                }
+            })
 
-    st.success("Route generated!")
-    st.text_area("Generated JSON", value=route_json, height=300)
-    st.download_button("Download JSON", route_json, file_name="skytils_route.txt")
+        route_json = json.dumps(route, separators=(',', ':'))
+
+        st.success("Route generated!")
+        st.text_area("Generated JSON", value=route_json, height=300)
+        st.download_button("Download JSON", route_json, file_name="skytils_route.txt")
+
+    except Exception:
+        st.error("Invalid format. Please enter coordinates like: `200 200 200`")
