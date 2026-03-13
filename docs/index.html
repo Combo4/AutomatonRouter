@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AutomatonRouter</title>
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    body {
+      margin: 0;
+      font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
+      background: #0f1115;
+      color: #e8ecf1;
+    }
+    .wrap {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 16px 32px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 2rem;
+    }
+    p {
+      color: #b8c0cc;
+      margin-top: 0;
+    }
+    .card {
+      background: #171b22;
+      border: 1px solid #2a3340;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.25);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .field label {
+      display: block;
+      margin-bottom: 6px;
+      color: #c6cfdb;
+      font-size: .9rem;
+    }
+    .field input {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid #3a4555;
+      background: #0f141c;
+      color: #e8ecf1;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 1rem;
+      outline: none;
+    }
+    .field input:focus {
+      border-color: #5ea1ff;
+      box-shadow: 0 0 0 3px rgba(94,161,255,.2);
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 8px 0 12px;
+    }
+    button {
+      border: 1px solid #3a4555;
+      background: #1b2430;
+      color: #e8ecf1;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: .95rem;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #233145;
+    }
+    button.primary {
+      background: #2b6be4;
+      border-color: #2b6be4;
+    }
+    button.primary:hover {
+      background: #3a7bf3;
+    }
+    #msg {
+      min-height: 1.2em;
+      margin: 6px 0 10px;
+      color: #ffb4b4;
+      font-size: .9rem;
+    }
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      min-height: 260px;
+      resize: vertical;
+      border: 1px solid #3a4555;
+      background: #0f141c;
+      color: #e8ecf1;
+      border-radius: 8px;
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .9rem;
+    }
+    @media (max-width: 700px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>AutomatonRouter</h1>
+    <p>Enter base coordinates (X, Y, Z), then generate your route JSON.</p>
+
+    <section class="card">
+      <div class="grid">
+        <div class="field">
+          <label for="x">X</label>
+          <input id="x" type="number" placeholder="e.g. 200" />
+        </div>
+        <div class="field">
+          <label for="y">Y</label>
+          <input id="y" type="number" placeholder="e.g. 200" />
+        </div>
+        <div class="field">
+          <label for="z">Z</label>
+          <input id="z" type="number" placeholder="e.g. 200" />
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="primary" id="generate">Generate Route</button>
+        <button id="copy" type="button">Copy JSON</button>
+        <button id="download" type="button">Download JSON</button>
+      </div>
+
+      <div id="msg"></div>
+      <textarea id="output" placeholder="Generated JSON will appear here..."></textarea>
+    </section>
+  </main>
+
+  <script>
+    const OFFSETS = [
+      [0, 0, 0], [14, 14, 13], [35, 10, -6], [43, 8, -19], [57, 8, -10], [52, 8, 6],
+      [51, 8, 28], [36, 8, 54], [16, 14, 48], [18, 13, -17], [31, 25, -19], [33, 15, -31],
+      [42, 41, -25], [48, 41, -15], [55, 48, -24], [56, 34, 2], [53, 43, 43], [41, 43, 57],
+      [30, 36, 49], [11, 36, 57], [3, 41, 51], [40, -3, 48], [26, -3, 38], [25, 3, 33],
+      [17, 3, 31], [27, -3, 22], [20, -3, 16], [37, -9, 1], [53, -9, 8], [58, -10, 25],
+      [37, -28, 12], [36, -18, 36], [10, -18, 37], [-13, -27, 27], [-16, -27, 7],
+      [-18, -26, -16], [10, -24, -11], [12, -22, -28], [22, -28, -5], [17, -10, -7],
+      [-10, -3, 2], [-11, -3, -18], [-24, -3, -25], [1, 0, -28], [-13, 8, 4],
+      [-15, 17, -9], [11, 15, 10]
+    ];
+
+    const xInput = document.getElementById('x');
+    const yInput = document.getElementById('y');
+    const zInput = document.getElementById('z');
+    const output = document.getElementById('output');
+    const msg = document.getElementById('msg');
+
+    function setMessage(text, isError = true) {
+      msg.textContent = text || '';
+      msg.style.color = isError ? '#ffb4b4' : '#98f0b5';
+    }
+
+    function generateRoute() {
+      const x = Number.parseInt(xInput.value, 10);
+      const y = Number.parseInt(yInput.value, 10);
+      const z = Number.parseInt(zInput.value, 10);
+
+      if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
+        setMessage('Please enter valid integer values for X, Y, and Z.', true);
+        return;
+      }
+
+      const route = OFFSETS.slice(1).map(([dx, dy, dz], index) => ({
+        x: x + dx,
+        y: y + dy,
+        z: z + dz,
+        r: 0,
+        g: 1,
+        b: 0,
+        options: { name: String(index + 1) }
+      }));
+
+      output.value = JSON.stringify(route);
+      setMessage('Route generated.', false);
+    }
+
+    async function copyOutput() {
+      if (!output.value.trim()) {
+        setMessage('Generate a route first.', true);
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(output.value);
+        setMessage('Copied to clipboard.', false);
+      } catch (_) {
+        output.select();
+        document.execCommand('copy');
+        setMessage('Copied to clipboard.', false);
+      }
+    }
+
+    function downloadOutput() {
+      if (!output.value.trim()) {
+        setMessage('Generate a route first.', true);
+        return;
+      }
+      const blob = new Blob([output.value], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'route.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setMessage('Downloaded route.json.', false);
+    }
+
+    document.getElementById('generate').addEventListener('click', generateRoute);
+    document.getElementById('copy').addEventListener('click', copyOutput);
+    document.getElementById('download').addEventListener('click', downloadOutput);
+  </script>
+</body>
+</html>
